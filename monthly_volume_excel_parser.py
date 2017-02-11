@@ -3,6 +3,7 @@
 import xlrd
 
 REPORT_TYPE_HEADER = 'Monthly Hourly Volume'
+SITE_NAME = 'Site Names:'
 
 
 def does_row_contain_string(row, target_string):
@@ -52,15 +53,27 @@ def is_cell_value_string_or_unicode(value):
 
 
 def main():
-    book = xlrd.open_workbook('data/MV03 - Site -0301 on 01-01-2008.xls')
-    print book
+    target_file = 'data/MV03 - Site -0301 on 01-01-2008.xls'
 
+    print 'Opening file {0}'.format(target_file)
+    book = xlrd.open_workbook(target_file)
     sheet = book.sheet_by_index(0)
-    print sheet
 
+    header_rows = []
     for row in sheet.get_rows():
         if does_row_contain_string(row, REPORT_TYPE_HEADER):
-            print row
+            header_rows.append(row)
+
+    print '----------------- Found {0} header rows -----------------'.format(len(header_rows))
+    print header_rows
+
+    site_name_rows = []
+
+    for row in sheet.get_rows():
+        if does_row_contain_string(row, SITE_NAME):
+            site_name_rows.append(row)
+    print '----------------- Found {0} site rows -----------------'.format(len(site_name_rows))
+    print site_name_rows
 
 
 if __name__ == '__main__':
