@@ -5,24 +5,26 @@ import xlrd
 REPORT_TYPE_HEADER = 'Monthly Hourly Volume'
 
 
-def does_row_contain_report_type_header(row):
+def does_row_contain_string(row, target_string):
     """
     Checks if a row contains the header string indicating what the report type is
+    :param target_string: the string that is being looked for
     :type row: xlrd.Row
     :rtype: bool
     """
     result = False
 
     for cell in row:
-        if does_cell_contain_report_type_header(cell.value):
+        if does_cell_contain_string(cell.value, target_string):
             return True
 
     return result
 
 
-def does_cell_contain_report_type_header(value):
+def does_cell_contain_string(value, target_string):
     """
-    Checks if a cell contains the header string indicating what the report type is
+    Checks if a cell contains a given string
+    :param target_string: the string that is being looked for
     :param value: unknown data type
     :return: True or False
     :rtype: bool
@@ -30,7 +32,7 @@ def does_cell_contain_report_type_header(value):
     if is_cell_value_string_or_unicode(value) is False:
         return False
 
-    if REPORT_TYPE_HEADER in value:
+    if target_string in value:
         return True
     else:
         return False
@@ -57,7 +59,7 @@ def main():
     print sheet
 
     for row in sheet.get_rows():
-        if does_row_contain_report_type_header(row):
+        if does_row_contain_string(row, REPORT_TYPE_HEADER):
             print row
 
 

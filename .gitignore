@@ -1,5 +1,6 @@
 # Created by .ignore support plugin (hsz.mobi)
 .idea
+*.iml
 
 ## Ignore the source data files
 data
