@@ -51,6 +51,19 @@ def is_cell_value_string_or_unicode(value):
     else:
         return False
 
+def get_site_name_from_row(row):
+    result = None
+
+    for cell in row:
+        if does_cell_contain_string(cell.value, SITE_NAME):
+            print cell.value
+        elif cell.value is None or cell.value == '':
+            print 'blank'
+        else:
+            result = cell.value
+            break
+
+    return result
 
 def main():
     target_file = 'data/MV03 - Site -0301 on 01-01-2008.xls'
@@ -68,12 +81,18 @@ def main():
     print header_rows
 
     site_name_rows = []
+    site_names = []
 
     for row in sheet.get_rows():
         if does_row_contain_string(row, SITE_NAME):
             site_name_rows.append(row)
+            site_names.append(get_site_name_from_row(row))
+
     print '----------------- Found {0} site rows -----------------'.format(len(site_name_rows))
     print site_name_rows
+
+    print '----------------- Found {0} site names -----------------'.format(len(site_names))
+    print site_names
 
 
 if __name__ == '__main__':
