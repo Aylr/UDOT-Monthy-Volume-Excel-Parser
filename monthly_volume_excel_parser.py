@@ -93,7 +93,8 @@ def find_contents_right_of_labels_with_coordinates(rows, target_label_string):
             sub_result['row_number'] = i
             result.append(sub_result)
 
-    return result
+    if len(result) > 0:
+        return result
 
 
 def find_date_cells(rows):
@@ -105,7 +106,8 @@ def find_date_cells(rows):
             if match:
                 matches.append({'row_number': row_i, 'column_number': col_i, 'contents': cell.value})
 
-    return matches
+    if len(matches) > 0:
+        return matches
 
 
 def find_rows_containing_dates(rows):
@@ -117,7 +119,88 @@ def find_rows_containing_dates(rows):
         match = re.search(r'(Sun|Mon|Tue|Wed|Thu|Fri|Sat), [0-9][0-9]', str(cell.value))
         if match:
             matches.append({'row_number': row_i, 'row': row})
-    return matches
+
+    if len(matches) > 0:
+        return matches
+
+
+def parse_rows_for_all_the_things(rows):
+    # type: (List(object)) -> dict
+    """
+    Given all the rows, this parses a spreadsheet and returns a dict of (usually three) report types.
+    - The volume counts arrays have 24 elements corresponding to each hour of the day starting at 00:00 to 23:00
+    ```
+    {
+        'Roadway, Monthly Hourly Volume for January 2008': {
+            'site_name': '-0301, 0080-129.000-',
+            'site_location': 'I 80 1 mile E of I 215 Int., Parleys Canyon, SLC MP 129.000 FC 11',
+            'data': [
+                {'date': 'Sun, 01', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Mon, 02', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Tue, 03', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Wed, 04', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Mon, 05', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']}
+            ]
+        },
+        'Neg Dir, Monthly Hourly Volume for January 2008': {
+            'site_name': '-0301, 0080-129.000-',
+            'site_location': 'I 80 1 mile E of I 215 Int., Parleys Canyon, SLC MP 129.000 FC 11',
+            'data': [
+                {'date': 'Sun, 01', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Mon, 02', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Tue, 03', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Wed, 04', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Mon, 05', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']}
+            ]
+        },
+        'Pos Dir, Monthly Hourly Volume for January 2008': {
+            'site_name': '-0301, 0080-129.000-',
+            'site_location': 'I 80 1 mile E of I 215 Int., Parleys Canyon, SLC MP 129.000 FC 11',
+            'data': [
+                {'date': 'Sun, 01', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Mon, 02', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Tue, 03', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Wed, 04', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Mon, 05', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']}
+            ]
+        }
+    }
+    ```
+
+    :param rows:
+    :return: dict
+    """
+    result = {}
+
+    for i, row in enumerate(rows):
+        # is header?
+        is_header = find_column_number_and_contents_matching_search_term(row, REPORT_TYPE_HEADER)
+        if is_header is not None:
+            current_type = is_header['contents']
+            result[current_type] = {'site_name': None, 'site_location': None, 'volume_data': []}
+
+        # is site name?
+        is_site_name = find_contents_right_of_labels_with_coordinates([row], SITE_NAME)
+        if is_site_name is not None:
+
+            #TODO remove hacky [row] list hacks
+
+            current_site = is_site_name[0]['contents']
+            result[current_type]['site_name'] = current_site
+
+        # is site location?
+        is_location = find_contents_right_of_labels_with_coordinates([row], SITE_LOCATION)
+        if is_location is not None:
+            current_location = is_location[0]['contents']
+            result[current_type]['site_location'] = current_location
+
+        # is traffic data?
+        is_traffic_data = find_rows_containing_dates([row])
+        if is_traffic_data is not None:
+            volume_data_row = is_traffic_data[0]['row']
+            result[current_type]['volume_data'].append(volume_data_row)
+
+    return result
 
 
 def nice_list_print(list):
@@ -156,10 +239,12 @@ def main():
 
     # find_and_print_interesting_things(sheet)
 
-    date_rows = find_rows_containing_dates(sheet.get_rows())
-    print '----------------- Found {0} date rows -----------------'.format(len(date_rows))
-    nice_list_print(date_rows)
-    print
+    # date_rows = find_rows_containing_dates(sheet.get_rows())
+    # print '----------------- Found {0} date rows -----------------'.format(len(date_rows))
+    # nice_list_print(date_rows)
+    # print
+
+    print parse_rows_for_all_the_things(sheet.get_rows())
 
 
 if __name__ == '__main__':
