@@ -117,7 +117,92 @@ def find_rows_containing_dates(rows):
         match = re.search(r'(Sun|Mon|Tue|Wed|Thu|Fri|Sat), [0-9][0-9]', str(cell.value))
         if match:
             matches.append({'row_number': row_i, 'row': row})
-    return matches
+
+    if len(matches) > 0:
+        return matches
+
+
+def make_report(type):
+    return {
+        'type': type,
+        'site_name': None,
+        'site_location': None,
+        'data': []
+    }
+
+
+def parse_rows_for_all_the_things(rows):
+    result = {
+        'Roadway': {
+            'site_name': '301',
+            'site_location': 'I15 eastbound ... stuff',
+            'data': [
+                {'date': 'Sun, 01', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]}
+            ]
+        },
+        'Negative': {
+            'site_name': '301',
+            'site_location': 'I15 eastbound ... stuff',
+            'data': [
+                {'date': 'Sun, 01', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]},
+                {'date': 'Mon, 02', 'volume_counts': [123, 4, 2, 3, 4, 5, 2, 2, 234, 123, 12, 31, 23, 23, 4]}
+            ]
+        }
+    }
+
+    for i, row in enumerate(rows):
+        current_type = None
+        current_site = None
+        current_location = None
+
+        # is header?
+        is_header = find_column_number_and_contents_matching_search_term(row, REPORT_TYPE_HEADER)
+        if is_header is not None:
+            current_type = is_header['contents']
+
+        # is site name?
+        is_site_name = find_contents_right_of_labels_with_coordinates(row, SITE_NAME)
+        if is_site_name is not None:
+            current_site = is_site_name['contents']
+
+        # is site location?
+        is_location = find_contents_right_of_labels_with_coordinates(row, SITE_LOCATION)
+        if is_location is not None:
+            current_location = is_location['contents']
+
+        # is traffic data?
+        is_traffic_data = find_rows_containing_dates(row)
+        if is_traffic_data is not None:
+            datarow = is_traffic_data['row']
+            data.append(datarow)
+
 
 
 def nice_list_print(list):
