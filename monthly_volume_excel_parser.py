@@ -125,6 +125,51 @@ def find_rows_containing_dates(rows):
 
 
 def parse_rows_for_all_the_things(rows):
+    # type: (List(object)) -> dict
+    """
+    Given all the rows, this parses a spreadsheet and returns a dict of (usually three) report types.
+    - The volume counts arrays have 24 elements corresponding to each hour of the day starting at 00:00 to 23:00
+    ```
+    {
+        'Roadway, Monthly Hourly Volume for January 2008': {
+            'site_name': '-0301, 0080-129.000-',
+            'site_location': 'I 80 1 mile E of I 215 Int., Parleys Canyon, SLC MP 129.000 FC 11',
+            'data': [
+                {'date': 'Sun, 01', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Mon, 02', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Tue, 03', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Wed, 04', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Mon, 05', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']}
+            ]
+        },
+        'Neg Dir, Monthly Hourly Volume for January 2008': {
+            'site_name': '-0301, 0080-129.000-',
+            'site_location': 'I 80 1 mile E of I 215 Int., Parleys Canyon, SLC MP 129.000 FC 11',
+            'data': [
+                {'date': 'Sun, 01', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Mon, 02', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Tue, 03', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Wed, 04', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Mon, 05', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']}
+            ]
+        },
+        'Pos Dir, Monthly Hourly Volume for January 2008': {
+            'site_name': '-0301, 0080-129.000-',
+            'site_location': 'I 80 1 mile E of I 215 Int., Parleys Canyon, SLC MP 129.000 FC 11',
+            'data': [
+                {'date': 'Sun, 01', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Mon, 02', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Tue, 03', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Wed, 04', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']},
+                {'date': 'Mon, 05', 'volume_counts': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, '...']}
+            ]
+        }
+    }
+    ```
+
+    :param rows:
+    :return: dict
+    """
     result = {}
 
     for i, row in enumerate(rows):
@@ -156,7 +201,6 @@ def parse_rows_for_all_the_things(rows):
             result[current_type]['volume_data'].append(volume_data_row)
 
     return result
-
 
 
 def nice_list_print(list):
