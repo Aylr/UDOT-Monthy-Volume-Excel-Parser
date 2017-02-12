@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import xlrd
+import re
 
 REPORT_TYPE_HEADER = 'Monthly Hourly Volume'
 SITE_NAME = 'Site Names:'
@@ -95,6 +96,30 @@ def find_contents_right_of_labels_with_coordinates(rows, target_label_string):
     return result
 
 
+def find_date_cells(rows):
+    matches = []
+
+    for row_i, row in enumerate(rows):
+        for col_i, cell in enumerate(row):
+            match = re.search(r'(Sun|Mon|Tue|Wed|Thu|Fri|Sat), [0-9][0-9]', str(cell.value))
+            if match:
+                matches.append({'row_number': row_i, 'column_number': col_i, 'contents': cell.value})
+
+    return matches
+
+
+def find_rows_containing_dates(rows):
+    matches = []
+
+    for row_i, row in enumerate(rows):
+        i = 0
+        cell = row[i]
+        match = re.search(r'(Sun|Mon|Tue|Wed|Thu|Fri|Sat), [0-9][0-9]', str(cell.value))
+        if match:
+            matches.append({'row_number': row_i, 'row': row})
+    return matches
+
+
 def nice_list_print(list):
     for i, item in enumerate(list):
         print '{0}: {1}'.format(i, item)
@@ -116,6 +141,11 @@ def find_and_print_interesting_things(sheet):
     nice_list_print(locations)
     print
 
+    date_cells = find_date_cells(sheet.get_rows())
+    print '----------------- Found {0} date cells -----------------'.format(len(date_cells))
+    nice_list_print(date_cells)
+    print
+
 
 def main():
     target_file = 'data/MV03 - Site -0301 on 01-01-2008.xls'
@@ -124,7 +154,12 @@ def main():
     book = xlrd.open_workbook(target_file)
     sheet = book.sheet_by_index(0)
 
-    find_and_print_interesting_things(sheet)
+    # find_and_print_interesting_things(sheet)
+
+    date_rows = find_rows_containing_dates(sheet.get_rows())
+    print '----------------- Found {0} date rows -----------------'.format(len(date_rows))
+    nice_list_print(date_rows)
+    print
 
 
 if __name__ == '__main__':
