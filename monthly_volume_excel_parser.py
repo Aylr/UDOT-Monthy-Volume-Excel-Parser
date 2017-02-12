@@ -79,45 +79,54 @@ def get_data_adjacent_to_target_lable(row, target_string=SITE_NAME):
     return result
 
 
-def find_and_print_header_rows(sheet):
+def find_header_rows(sheet):
     header_rows = []
     for row in sheet.get_rows():
         if does_row_contain_string(row, REPORT_TYPE_HEADER):
             header_rows.append(row)
-    print '----------------- Found {0} header rows -----------------'.format(len(header_rows))
-    print header_rows
+
+    return header_rows
 
 
-def find_and_print_site_names(sheet):
+def find_site_names(sheet):
     site_names = []
     for row in sheet.get_rows():
         if does_row_contain_string(row, SITE_NAME):
             site_names.append(get_data_adjacent_to_target_lable(row, SITE_NAME))
-    print '----------------- Found {0} site names -----------------'.format(len(site_names))
-    print site_names
+
+    return site_names
 
 
-def find_and_print_locations(sheet):
+def find_locations(sheet):
     site_locations = []
     for row in sheet.get_rows():
         if does_row_contain_string(row, SITE_LOCATION):
             site_locations.append(get_data_adjacent_to_target_lable(row, SITE_LOCATION))
-    print '----------------- Found {0} site locations -----------------'.format(len(site_locations))
-    print site_locations
+
+    return site_locations
 
 
 def main():
     target_file = 'data/MV03 - Site -0301 on 01-01-2008.xls'
 
-    print 'Opening file {0}'.format(target_file)
+    print 'Opening file {0}\n'.format(target_file)
     book = xlrd.open_workbook(target_file)
     sheet = book.sheet_by_index(0)
 
-    find_and_print_header_rows(sheet)
+    header_rows = find_header_rows(sheet)
+    print '----------------- Found {0} header rows -----------------'.format(len(header_rows))
+    print header_rows
+    print
 
-    find_and_print_site_names(sheet)
+    site_names = find_site_names(sheet)
+    print '----------------- Found {0} site names -----------------'.format(len(site_names))
+    print site_names
+    print
 
-    find_and_print_locations(sheet)
+    site_locations = find_locations(sheet)
+    print '----------------- Found {0} site locations -----------------'.format(len(site_locations))
+    print site_locations
+    print
 
 
 if __name__ == '__main__':
