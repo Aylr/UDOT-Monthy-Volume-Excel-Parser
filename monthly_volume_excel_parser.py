@@ -7,22 +7,10 @@ SITE_NAME = 'Site Names:'
 SITE_LOCATION = 'Location:'
 
 
-def does_row_contain_string(row, target_string):
-    # type: (object, str) -> bool
-    """
-    Checks if a row contains the header string indicating what the report type is
-    :return: True or False
-    :param target_string: the string that is being looked for
-    :type row: xlrd.Row
-    :rtype: bool
-    """
-    result = False
-
-    for cell in row:
+def find_column_number_and_contents_matching_search_term(row, target_string):
+    for i, cell in enumerate(row):
         if does_cell_contain_string(cell.value, target_string):
-            return True
-
-    return result
+            return {'column_number': i, 'contents': cell.value}
 
 
 def does_cell_contain_string(value, target_string):
@@ -57,64 +45,76 @@ def is_cell_value_string_or_unicode(value):
         return False
 
 
-def get_data_adjacent_to_target_label(row, target_string=SITE_NAME):
-    # type: (object, str) -> object
+def get_cell_contents_right_of_target_label(row, target_string=SITE_NAME):
+    # type: (List(object), str) -> object
     result = None
 
-    for cell in row:
+    for i, cell in enumerate(row):
         # we want to return the first non-blank cell after the cell containing the target label string is found
         if does_cell_contain_string(cell.value, target_string):
             # target label
-            # print cell.value
             pass
         elif cell.value is None or cell.value == '':
             # blank cell
-            # print 'blank'
             pass
         else:
             # desired value cell!
-            result = cell.value
+            result = {'column_number': i, 'contents': cell.value}
             break
 
     return result
 
 
-def find_header_rows(sheet):
-    # type: (object) -> List[object]
-    header_rows = []
+def find_direction_headers_with_coordinates(rows):
+    # type: (List(object)) -> List[object]
+    result = []
 
-    for row in sheet.get_rows():
-        if does_row_contain_string(row, REPORT_TYPE_HEADER):
-            header_rows.append(row)
+    for i, row in enumerate(rows):
+        sub_result = find_column_number_and_contents_matching_search_term(row, REPORT_TYPE_HEADER)
 
-    return header_rows
+        if sub_result is not None:
+            sub_result['row_number'] = i
+            result.append(sub_result)
 
-
-def find_site_names(sheet):
-    # type: (object) -> List[object]
-    site_names = []
-
-    for row in sheet.get_rows():
-        if does_row_contain_string(row, SITE_NAME):
-            site_names.append(get_data_adjacent_to_target_label(row, SITE_NAME))
-
-    return site_names
+    return result
 
 
-def find_locations(sheet):
-    # type: (object) -> List[object]
-    site_locations = []
+def find_contents_right_of_labels_with_coordinates(rows, target_label_string):
+    # type: (List(object)) -> List[object]
+    result = []
 
-    for row in sheet.get_rows():
-        if does_row_contain_string(row, SITE_LOCATION):
-            site_locations.append(get_data_adjacent_to_target_label(row, SITE_LOCATION))
+    for i, row in enumerate(rows):
+        # find the cell w/ the Site Name:
+        label_cell = find_column_number_and_contents_matching_search_term(row, target_label_string)
 
-    return site_locations
+        if label_cell is not None:
+            sub_result = get_cell_contents_right_of_target_label(row, target_label_string)
+            sub_result['row_number'] = i
+            result.append(sub_result)
+
+    return result
 
 
 def nice_list_print(list):
     for i, item in enumerate(list):
         print '{0}: {1}'.format(i, item)
+
+
+def find_and_print_interesting_things(sheet):
+    header_cells = find_direction_headers_with_coordinates(sheet.get_rows())
+    print '----------------- Found {0} header cells -----------------'.format(len(header_cells))
+    nice_list_print(header_cells)
+    print
+
+    site_names = find_contents_right_of_labels_with_coordinates(sheet.get_rows(), SITE_NAME)
+    print '----------------- Found {0} site name cells -----------------'.format(len(site_names))
+    nice_list_print(site_names)
+    print
+
+    locations = find_contents_right_of_labels_with_coordinates(sheet.get_rows(), SITE_LOCATION)
+    print '----------------- Found {0} site location cells -----------------'.format(len(locations))
+    nice_list_print(locations)
+    print
 
 
 def main():
@@ -124,20 +124,7 @@ def main():
     book = xlrd.open_workbook(target_file)
     sheet = book.sheet_by_index(0)
 
-    header_rows = find_header_rows(sheet)
-    print '----------------- Found {0} header rows -----------------'.format(len(header_rows))
-    nice_list_print(header_rows)
-    print
-
-    site_names = find_site_names(sheet)
-    print '----------------- Found {0} site names -----------------'.format(len(site_names))
-    nice_list_print(site_names)
-    print
-
-    site_locations = find_locations(sheet)
-    print '----------------- Found {0} site locations -----------------'.format(len(site_locations))
-    nice_list_print(site_locations)
-    print
+    find_and_print_interesting_things(sheet)
 
 
 if __name__ == '__main__':
