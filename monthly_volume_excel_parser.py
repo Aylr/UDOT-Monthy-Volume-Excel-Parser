@@ -162,7 +162,7 @@ def extract_day_from_row_label(row_label):
 
 def parse_date_string_as_seconds(incoming):
     result = parser.parse(incoming)
-    return result.strftime('%s')
+    return int(result.strftime('%s'))
 
 
 def unwrap_row_of_cells_to_values(row):
@@ -258,11 +258,12 @@ def parse_rows_for_all_the_things(rows):
 
             raw_row = traffic_data_matches[0]['row']
             timestamp = parse_date_string_as_seconds(string)
-            volume_data_row = unwrap_row_of_cells_to_values(raw_row)
-            # TODO should check to be sure it's a date cell hacky replace first cell with timestamp
-            volume_data_row[0] = timestamp
 
-            result[current_type]['volume_data'].append(volume_data_row)
+            # TODO hacky slice off first element
+            # TODO should check to be sure it's a date cell hacky replace first cell with timestamp
+            volume_data_row = unwrap_row_of_cells_to_values(raw_row)[1:]
+
+            result[current_type]['volume_data'].append({'timestamp': timestamp, 'data': volume_data_row})
     return result
 
 
