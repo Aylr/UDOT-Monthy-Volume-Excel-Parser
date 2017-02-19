@@ -1,0 +1,6 @@
+dateutil
+appdirs==1.4.0
+packaging==16.8
+pyparsing==2.1.10
+six==1.10.0
+xlrd==1.0.0
