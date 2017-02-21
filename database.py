@@ -40,23 +40,31 @@ def recreate_tables(db):
 
 
 def insert_site(db, site_name, site_location):
-    if type(db) is records.Database:
+    if type(db) is not records.Database:
+        return
+
+    if does_site_exist(db, site_name) is False:
         db.query('INSERT INTO {} (site_name, site_location) VALUES (:site_name, :site_location)'.format(SITE_TABLE), site_name=site_name, site_location=site_location)
+    else:
+        print('Site {} exists, skipping'.format(site_name))
 
 
 def does_site_exist(db, site_name):
     if type(db) is records.Database:
         result = db.query('SELECT * FROM ' + SITE_TABLE + ' WHERE site_name = :site_name;', site_name=site_name)
-        print result.all()
-        return result.all()
+        for row in result:
+            print row
+        return len(result.all()) is not 0
 
 
 def main():
-    print 'Recreating database'
-    db = setup_db_client('udot.db')
-    recreate_tables(db)
+    # print 'Recreating database'
     # db = setup_db_client('udot.db')
-    # x = does_site_exist(db, 'i80')
+    # recreate_tables(db)
+    db = setup_db_client('udot.db')
+    insert_site(db, 'stuff', 'stuff')
+    insert_site(db, 'stuff2', 'stuff2')
+    x = does_site_exist(db, 'stuff')
 
     print x
 
