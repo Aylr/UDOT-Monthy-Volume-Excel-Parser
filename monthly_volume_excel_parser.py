@@ -6,7 +6,6 @@ import xlrd.sheet
 from dateutil import parser
 
 """TODO
-* strptime --> store as seconds since epoch
 * dump down to individual files or into a sqlite db (or alternative)
 * custom errors to raise on unexpected mode switches
 * put filename (source in each row)
@@ -168,6 +167,7 @@ def parse_date_string_as_seconds(incoming):
 def unwrap_row_of_cells_to_values(row):
     result = [cell.value for cell in row]
     return result
+
 
 def parse_rows_for_all_the_things(rows):
     # type: (List(object)) -> dict
