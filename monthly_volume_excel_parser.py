@@ -1,7 +1,18 @@
 #!/usr/bin/env python
-
+import datetime
 import xlrd
 import re
+import xlrd.sheet
+from dateutil import parser
+
+"""TODO
+* dump down to individual files or into a sqlite db (or alternative)
+* custom errors to raise on unexpected mode switches
+* put filename (source in each row)
+* assertions in code
+* python optimization
+* mypy
+"""
 
 REPORT_TYPE_HEADER = 'Monthly Hourly Volume'
 SITE_NAME = 'Site Names:'
@@ -82,9 +93,16 @@ def find_direction_headers_with_coordinates(rows):
 
 def find_contents_right_of_labels_with_coordinates(rows, target_label_string):
     # type: (List(object)) -> List[object]
+    if issubclass(xlrd.sheet.Cell, type(rows[0])):
+        # single row (first element is a Cell)
+        input_rows = [rows]
+    else:
+        # rows appear to be list of rows
+        input_rows = rows
+
     result = []
 
-    for i, row in enumerate(rows):
+    for i, row in enumerate(input_rows):
         # find the cell w/ the Site Name:
         label_cell = find_column_number_and_contents_matching_search_term(row, target_label_string)
 
@@ -93,8 +111,7 @@ def find_contents_right_of_labels_with_coordinates(rows, target_label_string):
             sub_result['row_number'] = i
             result.append(sub_result)
 
-    if len(result) > 0:
-        return result
+    return result
 
 
 def find_date_cells(rows):
@@ -111,17 +128,45 @@ def find_date_cells(rows):
 
 
 def find_rows_containing_dates(rows):
+    if issubclass(xlrd.sheet.Cell, type(rows[0])):
+        # single row (first element is a Cell)
+        input_rows = [rows]
+    else:
+        # rows appear to be list of rows
+        input_rows = rows
+
     matches = []
 
-    for row_i, row in enumerate(rows):
+    for row_i, row in enumerate(input_rows):
         i = 0
         cell = row[i]
         match = re.search(r'(Sun|Mon|Tue|Wed|Thu|Fri|Sat), [0-9][0-9]', str(cell.value))
         if match:
             matches.append({'row_number': row_i, 'row': row})
 
-    if len(matches) > 0:
-        return matches
+    return matches
+
+
+def extract_month_year_from_header(header_string):
+    # type: (str) -> dict
+    if 'Monthly Hourly Volume for ' in header_string:
+        parsing = header_string.split(' for ')[-1].split(' ')
+
+        return {'year': int(parsing[-1]), 'month': parsing[0]}
+
+
+def extract_day_from_row_label(row_label):
+    return int(row_label.split(', ')[1])
+
+
+def parse_date_string_as_seconds(incoming):
+    result = parser.parse(incoming)
+    return int(result.strftime('%s'))
+
+
+def unwrap_row_of_cells_to_values(row):
+    result = [cell.value for cell in row]
+    return result
 
 
 def parse_rows_for_all_the_things(rows):
@@ -177,29 +222,48 @@ def parse_rows_for_all_the_things(rows):
         is_header = find_column_number_and_contents_matching_search_term(row, REPORT_TYPE_HEADER)
         if is_header is not None:
             current_type = is_header['contents']
-            result[current_type] = {'site_name': None, 'site_location': None, 'volume_data': []}
+            current_year = extract_month_year_from_header(current_type)['year']
+            current_month = extract_month_year_from_header(current_type)['month']
+            result[current_type] = {'site_name': None, 'site_location': None, 'year': current_year,
+                                    'month': current_month, 'volume_data': []}
 
         # is site name?
-        is_site_name = find_contents_right_of_labels_with_coordinates([row], SITE_NAME)
-        if is_site_name is not None:
+        site_name_matches = find_contents_right_of_labels_with_coordinates(row, SITE_NAME)
+        is_site_name = len(site_name_matches) > 0
 
-            #TODO remove hacky [row] list hacks
-
-            current_site = is_site_name[0]['contents']
+        if is_site_name:
+            current_site = site_name_matches[0]['contents']
             result[current_type]['site_name'] = current_site
 
         # is site location?
-        is_location = find_contents_right_of_labels_with_coordinates([row], SITE_LOCATION)
-        if is_location is not None:
-            current_location = is_location[0]['contents']
+        location_matches = find_contents_right_of_labels_with_coordinates(row, SITE_LOCATION)
+        is_location = len(location_matches) > 0
+
+        if is_location:
+            current_location = location_matches[0]['contents']
             result[current_type]['site_location'] = current_location
 
         # is traffic data?
-        is_traffic_data = find_rows_containing_dates([row])
-        if is_traffic_data is not None:
-            volume_data_row = is_traffic_data[0]['row']
-            result[current_type]['volume_data'].append(volume_data_row)
+        traffic_data_matches = find_rows_containing_dates(row)
+        is_traffic_data = len(traffic_data_matches) > 0
 
+        if is_traffic_data:
+            # Build the timestamp
+            label = find_date_cells([row])
+
+            day = extract_day_from_row_label(label[0]['contents'])
+            year = result[current_type]['year']
+            month = result[current_type]['month']
+            string = "{}-{}-{}".format(year, month, day)
+
+            raw_row = traffic_data_matches[0]['row']
+            timestamp = parse_date_string_as_seconds(string)
+
+            # TODO hacky slice off first element
+            # TODO should check to be sure it's a date cell hacky replace first cell with timestamp
+            volume_data_row = unwrap_row_of_cells_to_values(raw_row)[1:]
+
+            result[current_type]['volume_data'].append({'timestamp': timestamp, 'data': volume_data_row})
     return result
 
 
