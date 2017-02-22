@@ -325,17 +325,17 @@ def main():
     database.recreate_tables(db)
 
     for excel_file in os.listdir('data'):
+        logfile = open('parse_log.csv', 'wb')
         full_path = 'data/{}'.format(excel_file)
-        parse_file_and_save_to_db(db, full_path)
+        parse_file_and_save_to_db(db, full_path, logfile)
+        logfile.close()
 
 
-def parse_file_and_save_to_db(db, file_name):
-    # TODO add counter for stats
-    print 'Opening file {}'.format(file_name)
-
+def parse_file_and_save_to_db(db, file_name, logfile):
     book = xlrd.open_workbook(file_name)
     sheet = book.sheet_by_index(0)
     parsed_sheet = parse_rows_for_all_the_things(sheet.get_rows())
+
     # Get just the total, not the directional traffic
     total = parsed_sheet['total']
 
@@ -349,7 +349,9 @@ def parse_file_and_save_to_db(db, file_name):
             database.insert_volume(db, hour_timestamp, cell, total['site_name'], total['site_location'])
             counter += 1
 
-    print('    Saved {} records\n'.format(counter))
+    stats = '{}, {}\n'.format(file_name, counter)
+    print(stats)
+    logfile.write(stats)
 
 
 if __name__ == '__main__':
