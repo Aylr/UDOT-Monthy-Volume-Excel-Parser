@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import datetime
+import os
+
 import xlrd
 import re
 import xlrd.sheet
@@ -319,26 +321,35 @@ def find_and_print_interesting_things(sheet):
 
 
 def main():
-    target_file = 'data/MV03 - Site -0301 on 01-01-2008.xls'
-    print 'Opening file {}\n'.format(target_file)
-
-    book = xlrd.open_workbook(target_file)
-    sheet = book.sheet_by_index(0)
-    parsed_sheet = parse_rows_for_all_the_things(sheet.get_rows())
-
-    total = parsed_sheet['total']
-    print total
-
     db = database.setup_db_client('udot.db')
     database.recreate_tables(db)
 
+    for excel_file in os.listdir('data'):
+        full_path = 'data/{}'.format(excel_file)
+        parse_file_and_save_to_db(db, full_path)
+
+
+def parse_file_and_save_to_db(db, file_name):
+    # TODO add counter for stats
+    print 'Opening file {}'.format(file_name)
+
+    book = xlrd.open_workbook(file_name)
+    sheet = book.sheet_by_index(0)
+    parsed_sheet = parse_rows_for_all_the_things(sheet.get_rows())
+    # Get just the total, not the directional traffic
+    total = parsed_sheet['total']
+
+    counter = 0
     for day in total['volume_data']:
         midnight = day['timestamp']
 
         for i, cell in enumerate(day['data'][0:24]):
-            print("hour: {}, traffic: {}".format(i, cell))
+            # print("hour: {}, traffic: {}".format(i, cell))
             hour_timestamp = midnight + (i * 60 * 60)
             database.insert_volume(db, hour_timestamp, cell, total['site_name'], total['site_location'])
+            counter += 1
+
+    print('    Saved {} records\n'.format(counter))
 
 
 if __name__ == '__main__':
