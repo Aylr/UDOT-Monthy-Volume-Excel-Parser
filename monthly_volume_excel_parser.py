@@ -332,22 +332,25 @@ def main():
 
 
 def parse_file_and_save_to_db(db, file_name, logfile):
-    book = xlrd.open_workbook(file_name)
-    sheet = book.sheet_by_index(0)
-    parsed_sheet = parse_rows_for_all_the_things(sheet.get_rows())
+    try:
+        book = xlrd.open_workbook(file_name)
+        sheet = book.sheet_by_index(0)
+        parsed_sheet = parse_rows_for_all_the_things(sheet.get_rows())
 
-    # Get just the total, not the directional traffic
-    total = parsed_sheet['total']
+        # Get just the total, not the directional traffic
+        total = parsed_sheet['total']
 
-    counter = 0
-    for day in total['volume_data']:
-        midnight = day['timestamp']
+        counter = 0
+        for day in total['volume_data']:
+            midnight = day['timestamp']
 
-        for i, cell in enumerate(day['data'][0:24]):
-            # print("hour: {}, traffic: {}".format(i, cell))
-            hour_timestamp = midnight + (i * 60 * 60)
-            database.insert_volume(db, hour_timestamp, cell, total['site_name'], total['site_location'])
-            counter += 1
+            for i, cell in enumerate(day['data'][0:24]):
+                # print("hour: {}, traffic: {}".format(i, cell))
+                hour_timestamp = midnight + (i * 60 * 60)
+                database.insert_volume(db, hour_timestamp, cell, total['site_name'], total['site_location'])
+                counter += 1
+    except xlrd.biffh.XLRDError as e:
+        counter = 0
 
     stats = '{}, {}\n'.format(file_name, counter)
     print(stats)
