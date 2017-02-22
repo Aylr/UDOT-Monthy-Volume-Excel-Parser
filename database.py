@@ -41,11 +41,15 @@ def recreate_tables(db):
     """
     db.query('DROP TABLE IF EXISTS {};'.format(SITE_TABLE))
     db.query('DROP TABLE IF EXISTS {};'.format(VOLUME_TABLE))
+    db.query('DROP INDEX IF EXISTS site_name_index;')
+    db.query('DROP INDEX IF EXISTS volume_site_timestamp;')
     db.query('CREATE TABLE {} (id INTEGER PRIMARY KEY AUTOINCREMENT, site_name TEXT, site_location TEXT);'.format(
         SITE_TABLE))
     db.query(
         'CREATE TABLE {} (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp INT, volume INT, site_id INT, \
         FOREIGN KEY (site_id) REFERENCES sites(id));'.format(VOLUME_TABLE))
+    db.query('CREATE INDEX IF NOT EXISTS site_name_index ON {} (site_name);'.format(SITE_TABLE))
+    db.query('CREATE INDEX IF NOT EXISTS volume_site_timestamp ON {} (site_id, timestamp);'.format(VOLUME_TABLE))
 
 
 def insert_site(db, site_name, site_location):
