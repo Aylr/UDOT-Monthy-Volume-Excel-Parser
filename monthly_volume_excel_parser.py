@@ -4,9 +4,12 @@ import xlrd
 import re
 import xlrd.sheet
 from dateutil import parser
+import database
 
 """TODO
-* dump down to individual files or into a sqlite db (or alternative)
+- [ ] loop through each .xls file
+- [ ] unwrap timestamps into 24 hour chunks
+- [ ] drop last 'total' column (or use as chekcsum)
 * custom errors to raise on unexpected mode switches
 * put filename (source in each row)
 * assertions in code
@@ -169,6 +172,18 @@ def unwrap_row_of_cells_to_values(row):
     return result
 
 
+def extract_direction_from_header(header_string):
+    # type: (str) -> str
+    if 'Pos' in header_string:
+        result = 'positive'
+    elif 'Neg' in header_string:
+        result = 'negative'
+    elif 'Roadway' in header_string:
+        result = 'total'
+
+    return result
+
+
 def parse_rows_for_all_the_things(rows):
     # type: (List(object)) -> dict
     """
@@ -222,10 +237,12 @@ def parse_rows_for_all_the_things(rows):
         is_header = find_column_number_and_contents_matching_search_term(row, REPORT_TYPE_HEADER)
         if is_header is not None:
             current_type = is_header['contents']
+            current_direction = extract_direction_from_header(current_type)
             current_year = extract_month_year_from_header(current_type)['year']
             current_month = extract_month_year_from_header(current_type)['month']
-            result[current_type] = {'site_name': None, 'site_location': None, 'year': current_year,
-                                    'month': current_month, 'volume_data': []}
+
+            result[current_direction] = {'site_name': None, 'site_location': None,
+                                    'year': current_year, 'month': current_month, 'volume_data': []}
 
         # is site name?
         site_name_matches = find_contents_right_of_labels_with_coordinates(row, SITE_NAME)
@@ -233,7 +250,7 @@ def parse_rows_for_all_the_things(rows):
 
         if is_site_name:
             current_site = site_name_matches[0]['contents']
-            result[current_type]['site_name'] = current_site
+            result[current_direction]['site_name'] = current_site
 
         # is site location?
         location_matches = find_contents_right_of_labels_with_coordinates(row, SITE_LOCATION)
@@ -241,7 +258,7 @@ def parse_rows_for_all_the_things(rows):
 
         if is_location:
             current_location = location_matches[0]['contents']
-            result[current_type]['site_location'] = current_location
+            result[current_direction]['site_location'] = current_location
 
         # is traffic data?
         traffic_data_matches = find_rows_containing_dates(row)
@@ -252,9 +269,11 @@ def parse_rows_for_all_the_things(rows):
             label = find_date_cells([row])
 
             day = extract_day_from_row_label(label[0]['contents'])
-            year = result[current_type]['year']
-            month = result[current_type]['month']
-            string = "{}-{}-{}".format(year, month, day)
+            year = result[current_direction]['year']
+            month = result[current_direction]['month']
+
+            # TODO get rid of hacky midnight pinning
+            string = "{}-{}-{} 00:00".format(year, month, day)
 
             raw_row = traffic_data_matches[0]['row']
             timestamp = parse_date_string_as_seconds(string)
@@ -263,7 +282,7 @@ def parse_rows_for_all_the_things(rows):
             # TODO should check to be sure it's a date cell hacky replace first cell with timestamp
             volume_data_row = unwrap_row_of_cells_to_values(raw_row)[1:]
 
-            result[current_type]['volume_data'].append({'timestamp': timestamp, 'data': volume_data_row})
+            result[current_direction]['volume_data'].append({'timestamp': timestamp, 'data': volume_data_row})
     return result
 
 
@@ -293,22 +312,33 @@ def find_and_print_interesting_things(sheet):
     nice_list_print(date_cells)
     print
 
+    date_rows = find_rows_containing_dates(sheet.get_rows())
+    print '----------------- Found {0} date rows -----------------'.format(len(date_rows))
+    nice_list_print(date_rows)
+    print
+
 
 def main():
     target_file = 'data/MV03 - Site -0301 on 01-01-2008.xls'
+    print 'Opening file {}\n'.format(target_file)
 
-    print 'Opening file {0}\n'.format(target_file)
     book = xlrd.open_workbook(target_file)
     sheet = book.sheet_by_index(0)
+    parsed_sheet = parse_rows_for_all_the_things(sheet.get_rows())
 
-    # find_and_print_interesting_things(sheet)
+    total = parsed_sheet['total']
+    print total
 
-    # date_rows = find_rows_containing_dates(sheet.get_rows())
-    # print '----------------- Found {0} date rows -----------------'.format(len(date_rows))
-    # nice_list_print(date_rows)
-    # print
+    db = database.setup_db_client('udot.db')
+    database.recreate_tables(db)
 
-    print parse_rows_for_all_the_things(sheet.get_rows())
+    for day in total['volume_data']:
+        midnight = day['timestamp']
+
+        for i, cell in enumerate(day['data'][0:24]):
+            print("hour: {}, traffic: {}".format(i, cell))
+            hour_timestamp = midnight + (i * 60 * 60)
+            database.insert_volume(db, hour_timestamp, cell, total['site_name'], total['site_location'])
 
 
 if __name__ == '__main__':
